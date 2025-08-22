@@ -20,7 +20,7 @@ export default function Navbar() {
                 aria-label="Primary"
             >
                 <Link href="/" aria-label="RaveCards Home" className="flex items-center">
-                    <Image src="/logo.png" alt="RaveCards" width={28} height={28} priority className="invert" />
+                    <Image src="/logo.png" alt="RaveCards" width={60} height={60} priority className="invert" />
                 </Link>
 
                 <ul className="hidden items-center gap-8 md:flex">
