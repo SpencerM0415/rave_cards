@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Jost } from "next/font/google";
 import "./globals.css";
+import { Footer, Navbar } from "@/components";
 
 const jost = Jost({
     variable: '--font-jost',
@@ -22,7 +23,9 @@ export default function RootLayout({
       <body
         className={`${jost.className} antialiased`}
       >
+        <Navbar />
         {children}
+        <Footer />
       </body>
     </html>
   );
