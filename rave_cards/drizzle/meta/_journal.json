@@ -8,6 +8,13 @@
       "when": 1755891172969,
       "tag": "0000_silky_king_bedlam",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1756127563809,
+      "tag": "0001_new_liz_osborn",
+      "breakpoints": true
     }
   ]
 }

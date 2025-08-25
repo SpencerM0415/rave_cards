@@ -9,7 +9,7 @@ const jost = Jost({
 })
 
 export const metadata: Metadata = {
-  title: "Rave Cards",
+  title: "Festival Trading Cards",
   description: "E-Commerce Platform for Festival Trading Cards",
 };
 
