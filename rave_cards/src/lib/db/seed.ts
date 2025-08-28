@@ -1,8 +1,8 @@
 import { db } from '@/lib/db';
 import {
-    brands, categories, collections, productCollections,
+    brands, categories, collections, productCollections, packTypes,
     products, productVariants, productImages,
-    insertBrandSchema, insertCategorySchema, insertCollectionSchema,
+    insertBrandSchema, insertCategorySchema, insertCollectionSchema, insertPackTypeSchema,
     insertProductSchema, insertVariantSchema, insertProductImageSchema,
     type InsertProduct, type InsertVariant, type InsertProductImage,
 } from '@/lib/db/schema';
@@ -51,7 +51,7 @@ async function seed() {
         log('Seeding categories: Card Pack Types');
         const catRows = [
             { name: 'Artist Cards', slug: 'artist-cards', parentId: null },
-            { name: 'Headliner Packs', slug: 'headliner-packs', parentId: null },
+            { name: 'Headliner Packs', slug: 'headliner-trading-cards', parentId: null },
             { name: 'Venue Cards', slug: 'venue-cards', parentId: null },
             { name: 'Limited Edition', slug: 'limited-edition', parentId: null },
             { name: 'Holographic Special', slug: 'holographic-special', parentId: null },
@@ -61,6 +61,18 @@ async function seed() {
         for (const row of catRows) {
             const exists = await db.select().from(categories).where(eq(categories.slug, row.slug)).limit(1);
             if (!exists.length) await db.insert(categories).values(row);
+        }
+
+        log('Seeding pack types');
+        const packTypeRows = [
+            { name: 'Standard', slug: 'standard', cardCount: 8, sortOrder: 0 },
+            { name: 'Deluxe', slug: 'deluxe', cardCount: 15, sortOrder: 1 },
+            { name: 'Premium', slug: 'premium', cardCount: 25, sortOrder: 2 },
+        ].map((p) => insertPackTypeSchema.parse(p));
+
+        for (const row of packTypeRows) {
+            const exists = await db.select().from(packTypes).where(eq(packTypes.slug, row.slug)).limit(1);
+            if (!exists.length) await db.insert(packTypes).values(row);
         }
 
         log('Seeding collections: Festival Seasons');
@@ -81,6 +93,7 @@ async function seed() {
         const allBrands = await db.select().from(brands);
         const allCategories = await db.select().from(categories);
         const allCollections = await db.select().from(collections);
+        const allPackTypes = await db.select().from(packTypes);
 
         const uploadsRoot = join(process.cwd(), 'static', 'uploads', 'trading-cards');
         if (!existsSync(uploadsRoot)) {
@@ -92,25 +105,25 @@ async function seed() {
         // Product names for different card pack types
         const productTemplates = [
             { name: 'Coachella 2025 Artist Pack', brand: 'coachella', category: 'artist-cards' },
-            { name: 'Lollapalooza Headliner Collection', brand: 'lollapalooza', category: 'headliner-packs' },
+            { name: 'Lollapalooza Headliner Collection', brand: 'lollapalooza', category: 'headliner-trading-cards' },
             { name: 'Bonnaroo Venue Memories', brand: 'bonnaroo', category: 'venue-cards' },
             { name: 'EDC Limited Edition Holographs', brand: 'edc', category: 'limited-edition' },
             { name: 'Burning Man Exclusive Series', brand: 'burning-man', category: 'holographic-special' },
             { name: 'Tomorrowland Main Stage Pack', brand: 'tomorrowland', category: 'artist-cards' },
-            { name: 'Ultra 2025 DJ Legends', brand: 'ultra', category: 'headliner-packs' },
+            { name: 'Ultra 2025 DJ Legends', brand: 'ultra', category: 'headliner-trading-cards' },
             { name: 'Coachella Vintage Collection', brand: 'coachella', category: 'vintage-collection' },
             { name: 'Lollapalooza Special Edition', brand: 'lollapalooza', category: 'limited-edition' },
             { name: 'Bonnaroo Artist Spotlight', brand: 'bonnaroo', category: 'artist-cards' },
             { name: 'EDC Holographic Deluxe', brand: 'edc', category: 'holographic-special' },
             { name: 'Burning Man Desert Dreams', brand: 'burning-man', category: 'venue-cards' },
             { name: 'Tomorrowland Heritage Pack', brand: 'tomorrowland', category: 'vintage-collection' },
-            { name: 'Ultra Bass Legends', brand: 'ultra', category: 'headliner-packs' },
+            { name: 'Ultra Bass Legends', brand: 'ultra', category: 'headliner-trading-cards' },
             { name: 'Coachella Indie Artist Pack', brand: 'coachella', category: 'artist-cards' },
         ];
 
         // Source card pack images
         const sourceImages = [
-            'pack-1.jpg', 'pack-2.webp', 'pack-3.webp', 'pack-4.webp', 'pack-5.avif',
+            'pack-1.png', 'pack-2.png', 'pack-3.png', 'pack-4.png', 'pack-5.png',
             'pack-6.avif', 'pack-7.avif', 'pack-8.avif', 'pack-9.avif', 'pack-10.avif',
             'pack-11.avif', 'pack-12.avif', 'pack-13.avif', 'pack-14.avif', 'pack-15.avif',
         ];
@@ -135,40 +148,38 @@ async function seed() {
             const retP = await db.insert(products).values(product as InsertProduct).returning();
             const insertedProduct = (retP as ProductRow[])[0];
 
-            // Create variants for different pack sizes/types
-            const packVariants = [
-                { type: 'Standard', cards: 8, basePrice: 12.99 },
-                { type: 'Deluxe', cards: 15, basePrice: 24.99 },
-                { type: 'Premium', cards: 25, basePrice: 39.99 },
-            ];
-
+            // Create variants for different pack types
             const variantIds: string[] = [];
             let defaultVariantId: string | null = null;
 
-            for (const packType of packVariants) {
-                // Add some price variation
+            for (const packType of allPackTypes) {
+                // Add some price variation based on pack type
+                const basePrice = packType.name === 'Standard' ? 12.99 :
+                    packType.name === 'Deluxe' ? 24.99 : 39.99;
                 const priceVariation = Math.random() < 0.2 ? randInt(-2, 3) : 0;
-                const finalPrice = Math.max(packType.basePrice + priceVariation, 5.99);
+                const finalPrice = Math.max(basePrice + priceVariation, 5.99);
                 const discountedPrice = Math.random() < 0.25 ? Number((finalPrice * 0.85).toFixed(2)) : null;
 
-                const sku = `${brand?.slug.toUpperCase()}-${packType.type.toUpperCase()}-${insertedProduct.id.slice(0, 8)}`;
+                const sku = `${brand?.slug.toUpperCase()}-${packType.slug.toUpperCase()}-${insertedProduct.id.slice(0, 8)}`;
 
                 const variant = insertVariantSchema.parse({
                     productId: insertedProduct.id,
                     sku,
                     price: finalPrice.toFixed(2),
                     salePrice: discountedPrice?.toFixed(2),
+                    packTypeId: packType.id,
                     inStock: randInt(10, 100),
-                    weight: Number((packType.cards * 0.05 + 0.1).toFixed(2)), // Weight based on card count
+                    weight: Number((packType.cardCount * 0.05 + 0.1).toFixed(2)), // Weight based on card count
                     dimensions: { length: 9, width: 6, height: 1 }, // Standard card pack dimensions
                 });
 
+                // @ts-ignore
                 const retV = await db.insert(productVariants).values(variant as InsertVariant).returning();
                 const created = (retV as VariantRow[])[0];
                 variantIds.push(created.id);
 
                 // Set the Standard pack as default variant
-                if (packType.type === 'Standard') {
+                if (packType.slug === 'standard') {
                     defaultVariantId = created.id;
                 }
             }

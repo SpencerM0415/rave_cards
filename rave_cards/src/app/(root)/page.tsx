@@ -8,7 +8,7 @@ const products = [
         subtitle: "EDM Fest Packs",
         meta: "6 Styles",
         price: 49.99,
-        imageSrc: "/packs/electric_forest_pack.png",
+        imageSrc: "/trading-cards/pack-2.png",
         badge: { label: "New", tone: "orange" as const },
     },
     {
@@ -17,7 +17,7 @@ const products = [
         subtitle: "EDM Fest Packs",
         meta: "4 Styles",
         price: 29.99,
-        imageSrc: "/packs/tomorrowland_pack.png",
+        imageSrc: "/trading-cards/pack-5.png",
         badge: { label: "Hot", tone: "red" as const },
     },
     {
@@ -26,7 +26,7 @@ const products = [
         subtitle: "EDM Fest Packs",
         meta: "6 Styles",
         price: 59.99,
-        imageSrc: "/packs/lostlands_pack.png",
+        imageSrc: "/trading-cards/pack-4.png",
         badge: { label: "Trending", tone: "green" as const },
     },
     {
@@ -35,7 +35,7 @@ const products = [
         subtitle: "EDM Fest Packs",
         meta: "3 Styles",
         price: 39.99,
-        imageSrc: "/packs/ezoo_pack.png",
+        imageSrc: "/trading-cards/pack-3.png",
     },
 ];
 

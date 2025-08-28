@@ -1,20 +1,19 @@
-import { pgTable, text, timestamp, uuid, integer, numeric, jsonb, real } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { pgTable, text, uuid, integer, decimal, jsonb, timestamp } from 'drizzle-orm/pg-core';
 import { z } from 'zod';
+import { relations } from 'drizzle-orm';
 import { products } from './products';
-import { productImages } from './images';
-import { orderItems } from './orders';
-import { cartItems } from './carts';
+import { packTypes } from './filters/pack-types'; // Your new pack types table
 
 export const productVariants = pgTable('product_variants', {
     id: uuid('id').primaryKey().defaultRandom(),
-    productId: uuid('product_id').references(() => products.id, { onDelete: 'cascade' }).notNull(),
+    productId: uuid('product_id').notNull().references(() => products.id, { onDelete: 'cascade' }),
     sku: text('sku').notNull().unique(),
-    price: numeric('price', { precision: 10, scale: 2 }).notNull(),
-    salePrice: numeric('sale_price', { precision: 10, scale: 2 }),
+    price: decimal('price', { precision: 10, scale: 2 }).notNull(),
+    salePrice: decimal('sale_price', { precision: 10, scale: 2 }),
+    packTypeId: uuid('pack_type_id').notNull().references(() => packTypes.id), // Replace colorId and sizeId
     inStock: integer('in_stock').notNull().default(0),
-    weight: real('weight'),
-    dimensions: jsonb('dimensions'),
+    weight: decimal('weight', { precision: 8, scale: 2 }),
+    dimensions: jsonb('dimensions').$type<{ length: number; width: number; height: number }>(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -23,31 +22,32 @@ export const productVariantsRelations = relations(productVariants, ({ one, many 
         fields: [productVariants.productId],
         references: [products.id],
     }),
-    images: many(productImages),
-    orderItems: many(orderItems),
-    cartItems: many(cartItems),
+    packType: one(packTypes, {
+        fields: [productVariants.packTypeId],
+        references: [packTypes.id],
+    }),
+    // Remove color and size relations since trading cards don't have these
 }));
 
 export const insertVariantSchema = z.object({
     productId: z.string().uuid(),
     sku: z.string().min(1),
-    price: z.string(),
-    salePrice: z.string().optional().nullable(),
-    inStock: z.number().int().nonnegative().optional(),
-    weight: z.number().optional().nullable(),
-    dimensions: z
-        .object({
-            length: z.number(),
-            width: z.number(),
-            height: z.number(),
-        })
-        .partial()
-        .optional()
-        .nullable(),
-    createdAt: z.date().optional(),
+    price: z.string().regex(/^\d+(\.\d{1,2})?$/),
+    salePrice: z.string().regex(/^\d+(\.\d{1,2})?$/).optional(),
+    packTypeId: z.string().uuid().optional(),
+    inStock: z.number().int().nonnegative().default(0),
+    weight: z.number().positive().optional(),
+    dimensions: z.object({
+        length: z.number().positive(),
+        width: z.number().positive(),
+        height: z.number().positive(),
+    }).optional(),
 });
+
 export const selectVariantSchema = insertVariantSchema.extend({
     id: z.string().uuid(),
+    createdAt: z.date(),
 });
+
 export type InsertVariant = z.infer<typeof insertVariantSchema>;
 export type SelectVariant = z.infer<typeof selectVariantSchema>;
